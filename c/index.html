@@ -50,6 +50,18 @@
       background: #000;
     }
 
+    /* L'immagine finale del frame */
+    #final-frame {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: black;
+      display: none;
+      z-index: 0;
+    }
+
     #postit {
       position: fixed;
       right: 10%;
@@ -92,6 +104,7 @@
   </style>
 </head>
 <body>
+
   <div class="container" id="main-screen">
     <div>
       <div id="rotate-message">Tocca il pulsante e ruota il telefono in orizzontale.</div>
@@ -105,6 +118,9 @@
       Il tuo browser non supporta il video HTML5.
     </video>
   </div>
+
+  <!-- L'immagine del frame finale -->
+  <img id="final-frame">
 
   <div id="postit">
     Ehy tesoro, ti amo da morire<br>
@@ -123,6 +139,7 @@
     const videoWrapper = document.getElementById('video-wrapper');
     const video = document.getElementById('video');
     const postit = document.getElementById('postit');
+    const finalFrame = document.getElementById('final-frame');
     const frameCanvas = document.getElementById('frame-canvas');
     const ctx = frameCanvas.getContext('2d');
 
@@ -160,9 +177,9 @@
         ctx.drawImage(video, 0, 0, vw, vh);
 
         const dataURL = frameCanvas.toDataURL('image/jpeg', 0.9);
-        document.body.style.backgroundImage = `url(${dataURL})`;
-        document.body.style.backgroundSize = 'cover';
-        document.body.style.backgroundPosition = 'center center';
+
+        finalFrame.src = dataURL;
+        finalFrame.style.display = 'block';
       }
 
       videoWrapper.style.display = 'none';
@@ -188,5 +205,6 @@
       captureLastFrameAndShowPostit();
     });
   </script>
+
 </body>
 </html>
