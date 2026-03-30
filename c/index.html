@@ -5,17 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Video in orizzontale</title>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     html, body {
       width: 100%;
       height: 100%;
       overflow: hidden;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: system-ui, sans-serif;
       background: #000;
       color: #fff;
     }
@@ -37,22 +33,6 @@
       padding: 16px;
     }
 
-    #rotate-message {
-      font-size: 1.2rem;
-    }
-
-    #start-btn {
-      margin-top: 16px;
-      padding: 10px 18px;
-      font-size: 1rem;
-      border-radius: 999px;
-      border: none;
-      background: #ffcc00;
-      color: #000;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
     #video-wrapper {
       position: fixed;
       inset: 0;
@@ -64,8 +44,9 @@
     }
 
     #video {
-      max-width: 100%;
-      max-height: 100%;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
       background: #000;
     }
 
@@ -96,22 +77,31 @@
       border-radius: 3px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.25);
     }
+
+    #start-btn {
+      margin-top: 16px;
+      padding: 10px 18px;
+      font-size: 1rem;
+      border-radius: 999px;
+      border: none;
+      background: #ffcc00;
+      color: #000;
+      font-weight: 600;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
   <div class="container" id="main-screen">
     <div>
-      <div id="rotate-message">
-        Ruota il telefono in orizzontale per iniziare il video.
-      </div>
+      <div id="rotate-message">Tocca il pulsante e ruota il telefono in orizzontale.</div>
       <button id="start-btn">Tocca per iniziare</button>
     </div>
   </div>
 
   <div id="video-wrapper">
-    <video id="video" playsinline preload="auto">
-      <!-- Sostituisci src con il tuo video -->
-      <source src="video.mp4" type="video/mp4" />
+    <video id="video" muted playsinline preload="auto">
+      <source src="vieo.mp4" type="video/mp4" />
       Il tuo browser non supporta il video HTML5.
     </video>
   </div>
@@ -140,24 +130,6 @@
       return window.innerWidth > window.innerHeight;
     }
 
-    async function enterFullscreen(elem) {
-      if (elem.requestFullscreen) {
-        await elem.requestFullscreen();
-      } else if (elem.webkitRequestFullscreen) {
-        await elem.webkitRequestFullscreen();
-      } else if (elem.msRequestFullscreen) {
-        await elem.msRequestFullscreen();
-      }
-    }
-
-    function showRotateMessage() {
-      rotateMessage.textContent = 'Ruota il telefono in orizzontale per iniziare il video.';
-    }
-
-    function showTapMessage() {
-      rotateMessage.textContent = 'Tocca il pulsante e poi ruota il telefono in orizzontale.';
-    }
-
     async function tryStartVideo() {
       if (!userReady || videoStarted || !isLandscape()) return;
 
@@ -166,38 +138,29 @@
       videoWrapper.style.display = 'flex';
 
       try {
-        await enterFullscreen(document.documentElement);
-      } catch (e) {
-        // Se fullscreen fallisce, continuiamo comunque
-      }
-
-      try {
         await video.play();
       } catch (e) {
-        // Se non parte, chiediamo un altro tap
         videoStarted = false;
         mainScreen.style.display = 'flex';
         videoWrapper.style.display = 'none';
-        showTapMessage();
+        rotateMessage.textContent = 'Tocca di nuovo il pulsante per avviare il video.';
       }
     }
 
     function captureLastFrameAndShowPostit() {
       const vw = video.videoWidth;
       const vh = video.videoHeight;
-      if (!vw || !vh) {
-        postit.style.display = 'block';
-        return;
+
+      if (vw && vh) {
+        frameCanvas.width = vw;
+        frameCanvas.height = vh;
+        ctx.drawImage(video, 0, 0, vw, vh);
+
+        const dataURL = frameCanvas.toDataURL('image/jpeg', 0.9);
+        document.body.style.backgroundImage = `url(${dataURL})`;
+        document.body.style.backgroundSize = 'cover';
+        document.body.style.backgroundPosition = 'center center';
       }
-
-      frameCanvas.width = vw;
-      frameCanvas.height = vh;
-      ctx.drawImage(video, 0, 0, vw, vh);
-
-      const dataURL = frameCanvas.toDataURL('image/jpeg', 0.9);
-      document.body.style.backgroundImage = `url(${dataURL})`;
-      document.body.style.backgroundSize = 'cover';
-      document.body.style.backgroundPosition = 'center center';
 
       videoWrapper.style.display = 'none';
       postit.style.display = 'block';
@@ -205,33 +168,22 @@
 
     startBtn.addEventListener('click', () => {
       userReady = true;
-      if (isLandscape()) {
-        tryStartVideo();
-      } else {
-        showRotateMessage();
-      }
+      if (isLandscape()) tryStartVideo();
+      else rotateMessage.textContent = 'Ora ruota il telefono in orizzontale.';
     });
 
     window.addEventListener('resize', () => {
-      if (userReady && isLandscape()) {
-        tryStartVideo();
-      }
+      if (userReady && isLandscape()) tryStartVideo();
     });
 
     window.addEventListener('orientationchange', () => {
-      if (userReady && isLandscape()) {
-        setTimeout(tryStartVideo, 200);
-      }
+      if (userReady && isLandscape()) setTimeout(tryStartVideo, 200);
     });
 
     video.addEventListener('ended', () => {
       video.pause();
       captureLastFrameAndShowPostit();
     });
-
-    if (!isLandscape()) {
-      showTapMessage();
-    }
   </script>
 </body>
 </html>
