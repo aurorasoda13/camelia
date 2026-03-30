@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Camelia</title>
+  <title>Video in orizzontale</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -50,7 +50,7 @@
       background: #000;
     }
 
-    /* L'immagine finale del frame */
+    /* Frame finale */
     #final-frame {
       position: fixed;
       inset: 0;
@@ -62,6 +62,7 @@
       z-index: 0;
     }
 
+    /* POST-IT */
     #postit {
       position: fixed;
       right: 10%;
@@ -71,10 +72,18 @@
       background: #fff8a3;
       color: #333;
       box-shadow: 0 8px 20px rgba(0,0,0,0.35);
-      transform: rotate(-3deg);
+      transform: rotate(-3deg) scale(0.6);
+      opacity: 0;
       display: none;
       z-index: 2;
       font-size: 0.95rem;
+      transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+
+    #postit.show {
+      display: block;
+      opacity: 1;
+      transform: rotate(-3deg) scale(1);
     }
 
     #postit::before {
@@ -90,16 +99,11 @@
       box-shadow: 0 2px 4px rgba(0,0,0,0.25);
     }
 
-    #start-btn {
-      margin-top: 16px;
-      padding: 10px 18px;
-      font-size: 1rem;
-      border-radius: 999px;
-      border: none;
-      background: #ffcc00;
-      color: #000;
-      font-weight: 600;
-      cursor: pointer;
+    /* Testo macchina da scrivere */
+    .typewriter {
+      border-right: 2px solid #333;
+      white-space: pre-line;
+      overflow: hidden;
     }
   </style>
 </head>
@@ -119,15 +123,10 @@
     </video>
   </div>
 
-  <!-- L'immagine del frame finale -->
   <img id="final-frame">
 
   <div id="postit">
-    Ehy tesoro, ti amo da morire<br>
-    sei tra le persone "colonne"<br>
-    della mia vita (siete tre): <br>
-    senza voi il mio mondo e tutto<br>
-    il resto crollerebbe.
+    <div id="postit-text" class="typewriter"></div>
   </div>
 
   <canvas id="frame-canvas" style="display:none;"></canvas>
@@ -139,12 +138,20 @@
     const videoWrapper = document.getElementById('video-wrapper');
     const video = document.getElementById('video');
     const postit = document.getElementById('postit');
+    const postitText = document.getElementById('postit-text');
     const finalFrame = document.getElementById('final-frame');
     const frameCanvas = document.getElementById('frame-canvas');
     const ctx = frameCanvas.getContext('2d');
 
     let userReady = false;
     let videoStarted = false;
+
+    const message = 
+`Ehy tesoro, ti amo da morire
+sei tra le persone "colonne"
+della mia vita (siete tre):
+senza voi il mio mondo e tutto
+il resto crollerebbe.`;
 
     function isLandscape() {
       return window.innerWidth > window.innerHeight;
@@ -165,6 +172,28 @@
         videoWrapper.style.display = 'none';
         rotateMessage.textContent = 'Tocca di nuovo il pulsante per avviare il video.';
       }
+
+      /* Mostra il post-it dopo X secondi dall'inizio del video */
+      setTimeout(showPostitWithAnimation, 2000); // <-- Cambia qui il tempo
+    }
+
+    function showPostitWithAnimation() {
+      postit.style.display = "block";
+      setTimeout(() => postit.classList.add("show"), 50);
+      typeWriterEffect(message, postitText, 25);
+    }
+
+    function typeWriterEffect(text, element, speed) {
+      element.textContent = "";
+      let i = 0;
+      function type() {
+        if (i < text.length) {
+          element.textContent += text.charAt(i);
+          i++;
+          setTimeout(type, speed);
+        }
+      }
+      type();
     }
 
     function captureLastFrameAndShowPostit() {
@@ -183,7 +212,6 @@
       }
 
       videoWrapper.style.display = 'none';
-      postit.style.display = 'block';
     }
 
     startBtn.addEventListener('click', () => {
