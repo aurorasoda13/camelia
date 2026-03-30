@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Video in orizzontale</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #000;
+      color: #fff;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 16px;
+    }
+
+    #rotate-message {
+      font-size: 1.2rem;
+    }
+
+    #start-btn {
+      margin-top: 16px;
+      padding: 10px 18px;
+      font-size: 1rem;
+      border-radius: 999px;
+      border: none;
+      background: #ffcc00;
+      color: #000;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    #video-wrapper {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1;
+    }
+
+    #video {
+      max-width: 100%;
+      max-height: 100%;
+      background: #000;
+    }
+
+    #postit {
+      position: fixed;
+      right: 10%;
+      bottom: 10%;
+      width: 220px;
+      padding: 16px;
+      background: #fff8a3;
+      color: #333;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+      transform: rotate(-3deg);
+      display: none;
+      z-index: 2;
+      font-size: 0.95rem;
+    }
+
+    #postit::before {
+      content: "";
+      position: absolute;
+      top: -14px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40px;
+      height: 18px;
+      background: #f5f5f5;
+      border-radius: 3px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="main-screen">
+    <div>
+      <div id="rotate-message">
+        Ruota il telefono in orizzontale per iniziare il video.
+      </div>
+      <button id="start-btn">Tocca per iniziare</button>
+    </div>
+  </div>
+
+  <div id="video-wrapper">
+    <video id="video" playsinline preload="auto">
+      <!-- Sostituisci src con il tuo video -->
+      <source src="vieo.mp4" type="video/mp4" />
+      Il tuo browser non supporta il video HTML5.
+    </video>
+  </div>
+
+  <div id="postit">
+    Questo è il messaggio sul post-it.<br>
+    Puoi scriverci quello che vuoi.
+  </div>
+
+  <canvas id="frame-canvas" style="display:none;"></canvas>
+
+  <script>
+    const startBtn = document.getElementById('start-btn');
+    const rotateMessage = document.getElementById('rotate-message');
+    const mainScreen = document.getElementById('main-screen');
+    const videoWrapper = document.getElementById('video-wrapper');
+    const video = document.getElementById('video');
+    const postit = document.getElementById('postit');
+    const frameCanvas = document.getElementById('frame-canvas');
+    const ctx = frameCanvas.getContext('2d');
+
+    let userReady = false;
+    let videoStarted = false;
+
+    function isLandscape() {
+      return window.innerWidth > window.innerHeight;
+    }
+
+    async function enterFullscreen(elem) {
+      if (elem.requestFullscreen) {
+        await elem.requestFullscreen();
+      } else if (elem.webkitRequestFullscreen) {
+        await elem.webkitRequestFullscreen();
+      } else if (elem.msRequestFullscreen) {
+        await elem.msRequestFullscreen();
+      }
+    }
+
+    function showRotateMessage() {
+      rotateMessage.textContent = 'Ruota il telefono in orizzontale per iniziare il video.';
+    }
+
+    function showTapMessage() {
+      rotateMessage.textContent = 'Tocca il pulsante e poi ruota il telefono in orizzontale.';
+    }
+
+    async function tryStartVideo() {
+      if (!userReady || videoStarted || !isLandscape()) return;
+
+      videoStarted = true;
+      mainScreen.style.display = 'none';
+      videoWrapper.style.display = 'flex';
+
+      try {
+        await enterFullscreen(document.documentElement);
+      } catch (e) {
+        // Se fullscreen fallisce, continuiamo comunque
+      }
+
+      try {
+        await video.play();
+      } catch (e) {
+        // Se non parte, chiediamo un altro tap
+        videoStarted = false;
+        mainScreen.style.display = 'flex';
+        videoWrapper.style.display = 'none';
+        showTapMessage();
+      }
+    }
+
+    function captureLastFrameAndShowPostit() {
+      const vw = video.videoWidth;
+      const vh = video.videoHeight;
+      if (!vw || !vh) {
+        postit.style.display = 'block';
+        return;
+      }
+
+      frameCanvas.width = vw;
+      frameCanvas.height = vh;
+      ctx.drawImage(video, 0, 0, vw, vh);
+
+      const dataURL = frameCanvas.toDataURL('image/jpeg', 0.9);
+      document.body.style.backgroundImage = `url(${dataURL})`;
+      document.body.style.backgroundSize = 'cover';
+      document.body.style.backgroundPosition = 'center center';
+
+      videoWrapper.style.display = 'none';
+      postit.style.display = 'block';
+    }
+
+    startBtn.addEventListener('click', () => {
+      userReady = true;
+      if (isLandscape()) {
+        tryStartVideo();
+      } else {
+        showRotateMessage();
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      if (userReady && isLandscape()) {
+        tryStartVideo();
+      }
+    });
+
+    window.addEventListener('orientationchange', () => {
+      if (userReady && isLandscape()) {
+        setTimeout(tryStartVideo, 200);
+      }
+    });
+
+    video.addEventListener('ended', () => {
+      video.pause();
+      captureLastFrameAndShowPostit();
+    });
+
+    if (!isLandscape()) {
+      showTapMessage();
+    }
+  </script>
+</body>
+</html>
